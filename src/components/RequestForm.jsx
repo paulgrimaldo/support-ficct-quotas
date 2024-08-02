@@ -6,21 +6,26 @@ const RequestForm = ({ onSubmit }) => {
     const [uClass, setClass] = useState('');
     const [group, setGroup] = useState('');
     const [showRelaxMessage, setShowRelaxMessage] = useState(false);
-    const [lastClickTimes, setLastClickTimes] = useState([]);
+    const [lastClickTime, setLastClickTime] = useState(null);
+    const [counter, setCounter] = useState(0);
 
-
-    const handleClickAllowed = () => {
-        const currentTime = new Date().getTime();
-        // Remove click times older than 5 minutes
-        const validClickTimes = lastClickTimes.filter(time => currentTime - time < 300000);
-        return validClickTimes.length < 4;
-    };
+    const TIME_LIMIT = process.env.REACT_APP_TIME_LIMIT || 10; // Time limit in minutes
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        if (!handleClickAllowed()) {
+        const trimmedClass = uClass.trim();
+        const trimmedGroup = group.trim();
+
+        if (trimmedClass === '' || trimmedGroup === '') {
+            alert("Por favor, completa los campos correctamente.");
+            return;
+        }
+
+        const currentTime = new Date().getTime();
+        if (lastClickTime && currentTime - lastClickTime < TIME_LIMIT * 60000) {
             setShowRelaxMessage(true);
+            setCounter(TIME_LIMIT * 60 - Math.floor((currentTime - lastClickTime) / 1000));
             return;
         }
 
@@ -36,7 +41,9 @@ const RequestForm = ({ onSubmit }) => {
                 setClass('');
                 setGroup('');
                 onSubmit();
-                setLastClickTimes([...lastClickTimes, new Date().getTime()]);
+                setLastClickTime(new Date().getTime());
+                setShowRelaxMessage(true);
+                setCounter(TIME_LIMIT * 60);
             });
 
         } catch (e) {
@@ -45,17 +52,26 @@ const RequestForm = ({ onSubmit }) => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        if (counter > 0) {
+            const timer = setTimeout(() => {
+                setCounter(counter - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (counter === 0) {
             setShowRelaxMessage(false);
-        }, 300000); // 5 minutes in milliseconds
-        return () => clearTimeout(timer);
-    }, [lastClickTimes]);
+        }
+    }, [counter]);
 
     return (
         <div className='container mt-3 col-sm-12 col-md-6 col-lg-6 col-xl-6 shadow-lg p-3 m-3 bg-white rounded'>
-            {showRelaxMessage && <div className="alert alert-warning">La herramienta no esta para juegos 😳</div>}
-            {
-                !showRelaxMessage &&
+            {showRelaxMessage ? (
+                <div>
+                    <div className="alert alert-success">Gracias por enviar tu solicitud, será tomada en cuenta para comunicarnos con las autoridades.</div>
+                    {counter > 0 && (
+                        <div className="alert alert-info">Puedes enviar una nueva solicitud en {Math.floor(counter / 60)}:{String(counter % 60).padStart(2, '0')}</div>
+                    )}
+                </div>
+            ) : (
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label htmlFor="class">Materia</label>
@@ -83,7 +99,7 @@ const RequestForm = ({ onSubmit }) => {
                     </div>
                     <button type="submit" className="btn btn-primary mt-3">Solicitar cupo🙏🏼</button>
                 </form>
-            }
+            )}
         </div>
     );
 };
