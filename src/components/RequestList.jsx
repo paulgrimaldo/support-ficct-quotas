@@ -13,15 +13,17 @@ const RequestsList = () => {
             const groupedRequests = groupRequestsByDate(requestsList);
 
             setRequests(prevRequests => {
-                const newRequests = { ...prevRequests };
+                const updatedRequests = { ...prevRequests };
                 Object.keys(groupedRequests).forEach(date => {
-                    if (newRequests[date]) {
-                        newRequests[date] = [...newRequests[date], ...groupedRequests[date]];
+                    if (updatedRequests[date]) {
+                        // Sort and merge new with existing items
+                        updatedRequests[date] = [...updatedRequests[date], ...groupedRequests[date]]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                     } else {
-                        newRequests[date] = groupedRequests[date];
+                        updatedRequests[date] = groupedRequests[date];
                     }
                 });
-                return newRequests;
+                return updatedRequests;
             });
 
             if (requestsList.length > 0) {
