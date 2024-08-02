@@ -22,6 +22,11 @@ const RequestForm = ({ onSubmit }) => {
             return;
         }
 
+        if (trimmedClass.length > 20 || trimmedGroup > 20) {
+            alert("Por favor, no modifique las etiquetas HTML");
+            return;
+        }
+
         const currentTime = new Date().getTime();
         if (lastClickTime && currentTime - lastClickTime < TIME_LIMIT * 60000) {
             setShowRelaxMessage(true);
